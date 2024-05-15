@@ -28,7 +28,10 @@ const indexOwner = async function (req, res) {
         include: [{
           model: RestaurantCategory,
           as: 'restaurantCategory'
-        }]
+
+        }],
+        order: [['status', 'ASC'], ['name', 'ASC']]
+
       })
     res.json(restaurants)
   } catch (err) {
@@ -44,6 +47,77 @@ const create = async function (req, res) {
     res.json(restaurant)
   } catch (err) {
     res.status(500).send(err)
+  }
+}
+
+const canChangeStatus = async (req, res) => {
+  try {
+    const { restaurantId } = req.params
+    const restaurant = await Restaurant.findByPk(restaurantId)
+    if (!restaurant) {
+      return res.status(404).send('Restaurant not found')
+    }
+
+    if (restaurant.status === 'closed' || restaurant.status === 'temporarily closed') {
+      return res.status(403).send('Cannot change status of a closed or temporarily closed restaurant')
+    }
+
+    const orders = await restaurant.getOrders({ where: { deliveredAt: null } })
+    const canChange = orders.length === 0
+
+    res.json({ canChange })
+  } catch (err) {
+    res.status(500).send(err.message)
+  }
+}
+const updateStatus = async (req, res) => {
+  try {
+    const { restaurantId } = req.params
+    const { status } = req.body
+
+    const restaurant = await Restaurant.findByPk(restaurantId)
+    if (!restaurant) {
+      return res.status(404).send('Restaurant not found')
+    }
+
+    if (req.user.id !== restaurant.userId) {
+      return res.status(403).send('Not enough privileges. This entity does not belong to you')
+    }
+
+    if ((restaurant.status === 'offline' && status === 'online') || (restaurant.status === 'online' && status === 'offline')) {
+      const orders = await restaurant.getOrders({ where: { deliveredAt: null } })
+      if (orders.length === 0) {
+        restaurant.status = status
+        await restaurant.save()
+        res.json(restaurant)
+      } else {
+        res.status(400).send('Cannot change status with pending orders')
+      }
+    } else {
+      res.status(400).send('Invalid status transition')
+    }
+  } catch (err) {
+    res.status(500).send(err.message)
+  }
+}
+// quiero que el usuario pueda promocionar su restaurante
+const promote = async (req, res) => {
+  try {
+    const { restaurantId } = req.params
+    const restaurant = await Restaurant.findByPk(restaurantId)
+    if (!restaurant) {
+      return res.status(404).send('Restaurant not found')
+    }
+    if (req.user.id !== restaurant.userId) {
+      return res.status(403).send('Not enough privileges. This entity does not belong to you')
+    }
+    // si la variable promotion es true, entonces el restaurante se promociona
+    restaurant.promotion = true
+    await restaurant.save() // guardo el cambio
+
+    res.json(restaurant)
+  } catch (err) {
+    res.status(500).send(err.message)
   }
 }
 
@@ -101,6 +175,9 @@ const RestaurantController = {
   create,
   show,
   update,
-  destroy
+  destroy,
+  updateStatus,
+  canChangeStatus,
+  promote
 }
 export default RestaurantController

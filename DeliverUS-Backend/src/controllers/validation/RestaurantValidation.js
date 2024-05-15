@@ -51,4 +51,6 @@ const update = [
   }).withMessage('Maximum file size of ' + maxFileSize / 1000000 + 'MB')
 ]
 
+check('status').exists().isIn(['online', 'offline']).withMessage('Invalid status value')
+
 export { create, update }
