@@ -76,7 +76,13 @@ const loadModel = (sequelize, DataTypes) => {
       allowNull: false,
       type: DataTypes.DATE,
       defaultValue: new Date()
+    },
+    promocionado: {
+      allowNull: true,
+      type: DataTypes.BOOLEAN,
+      defaultValue: false
     }
+
   }, {
     sequelize,
     modelName: 'Restaurant'

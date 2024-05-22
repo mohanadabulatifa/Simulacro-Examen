@@ -25,5 +25,7 @@ function updateStatus (id, status) {
 function remove (id) {
   return destroy(`restaurants/${id}`)
 }
-
-export { getAll, getDetail, getRestaurantCategories, create, update, remove, updateStatus }
+function promote (id, promote) {
+  return patch(`restaurants/${id}/promote`, { promote })
+}
+export { getAll, getDetail, getRestaurantCategories, create, update, remove, updateStatus, promote }

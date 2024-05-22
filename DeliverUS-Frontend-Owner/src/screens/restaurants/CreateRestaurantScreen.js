@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Image, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native'
+import { Image, Platform, Pressable, ScrollView, StyleSheet, View, Switch } from 'react-native'
 import * as ExpoImagePicker from 'expo-image-picker'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 import * as yup from 'yup'
@@ -19,7 +19,7 @@ export default function CreateRestaurantScreen ({ navigation }) {
   const [restaurantCategories, setRestaurantCategories] = useState([])
   const [backendErrors, setBackendErrors] = useState()
 
-  const initialRestaurantValues = { name: null, description: null, address: null, postalCode: null, url: null, shippingCosts: null, email: null, phone: null, restaurantCategoryId: null }
+  const initialRestaurantValues = { name: null, description: null, address: null, postalCode: null, url: null, shippingCosts: null, email: null, phone: null, restaurantCategoryId: null, promoted: false }
   const validationSchema = yup.object().shape({
     name: yup
       .string()
@@ -54,6 +54,7 @@ export default function CreateRestaurantScreen ({ navigation }) {
       .positive()
       .integer()
       .required('Restaurant category is required')
+
   })
 
   useEffect(() => {
@@ -208,6 +209,18 @@ export default function CreateRestaurantScreen ({ navigation }) {
                 backendErrors.map((error, index) => <TextError key={index}>{error.param}-{error.msg}</TextError>)
               }
 
+            <TextRegular style={[{ marginTop: 10, flex: 1, flexDirection: 'row', justifyContent: 'center' }]}>Is it promoted?</TextRegular>
+              <Switch
+                trackColor={{ false: GlobalStyles.brandSecondary, true: GlobalStyles.brandPrimary }}
+                thumbColor={values.promoted ? GlobalStyles.brandSecondary : '#f4f3f4'}
+
+                value={values.promoted}
+                style={styles.switch}
+                onValueChange={value =>
+                  setFieldValue('promoted', value)
+                }
+              />
+
               <Pressable
                 onPress={handleSubmit}
                 style={({ pressed }) => [
@@ -218,6 +231,7 @@ export default function CreateRestaurantScreen ({ navigation }) {
                   },
                   styles.button
                 ]}>
+
               <View style={[{ flex: 1, flexDirection: 'row', justifyContent: 'center' }]}>
                 <MaterialCommunityIcons name='content-save' color={'white'} size={20}/>
                 <TextRegular textStyle={styles.text}>

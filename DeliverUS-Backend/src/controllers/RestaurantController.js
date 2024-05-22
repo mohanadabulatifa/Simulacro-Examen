@@ -10,7 +10,7 @@ const index = async function (req, res) {
         model: RestaurantCategory,
         as: 'restaurantCategory'
       },
-        order: [[{ model: RestaurantCategory, as: 'restaurantCategory' }, 'name', 'ASC']]
+        order: [['promocionado', 'ASC'], [{ model: RestaurantCategory, as: 'restaurantCategory' }, 'name', 'ASC']]
       }
     )
     res.json(restaurants)
@@ -30,7 +30,7 @@ const indexOwner = async function (req, res) {
           as: 'restaurantCategory'
 
         }],
-        order: [['status', 'ASC'], ['name', 'ASC']]
+        order: [['promocionado', 'ASC'], ['status', 'ASC'], ['name', 'ASC']]
 
       })
     res.json(restaurants)
@@ -47,6 +47,32 @@ const create = async function (req, res) {
     res.json(restaurant)
   } catch (err) {
     res.status(500).send(err)
+  }
+}
+const promote = async (req, res) => {
+  try {
+    const { restaurantId } = req.params
+    const { promote } = req.body
+
+    const restaurant = await Restaurant.findByPk(restaurantId)
+    const restaurantPromocionadoAntes = await Restaurant.findAll({ where: { promocionado: true } })
+
+    if (!restaurant) {
+      return res.status(404).send('Restaurant not found')
+    }
+    if (restaurantPromocionadoAntes.length !== 0) {
+      return res.status(404).send('Tienes otros restaurantes promocionados')
+    }
+
+    if ((restaurant.promocionado === false && promote === true) || (restaurant.promocionado === true && promote === false)) {
+      restaurant.promocionado = promote
+      await restaurant.save()
+      res.json(restaurant)
+    } else {
+      res.status(400).send('Invalid status transition')
+    }
+  } catch (err) {
+    res.status(500).send(err.message)
   }
 }
 
@@ -96,26 +122,6 @@ const updateStatus = async (req, res) => {
     } else {
       res.status(400).send('Invalid status transition')
     }
-  } catch (err) {
-    res.status(500).send(err.message)
-  }
-}
-// quiero que el usuario pueda promocionar su restaurante
-const promote = async (req, res) => {
-  try {
-    const { restaurantId } = req.params
-    const restaurant = await Restaurant.findByPk(restaurantId)
-    if (!restaurant) {
-      return res.status(404).send('Restaurant not found')
-    }
-    if (req.user.id !== restaurant.userId) {
-      return res.status(403).send('Not enough privileges. This entity does not belong to you')
-    }
-    // si la variable promotion es true, entonces el restaurante se promociona
-    restaurant.promotion = true
-    await restaurant.save() // guardo el cambio
-
-    res.json(restaurant)
   } catch (err) {
     res.status(500).send(err.message)
   }
@@ -179,5 +185,6 @@ const RestaurantController = {
   updateStatus,
   canChangeStatus,
   promote
+
 }
 export default RestaurantController
